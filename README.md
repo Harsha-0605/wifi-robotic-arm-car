@@ -15,6 +15,7 @@ This project demonstrates real-time wireless control, robotics, and embedded sys
 - Real-time movement control
 - Wireless communication
 - Multi-motor control system
+- Dual motor driver control system (separate control for car and arm)
 
 ---
 
@@ -28,11 +29,11 @@ This system enables remote control of a robotic arm to perform tasks safely.
 | Component | Description |
 |----------|-------------|
 | ESP32 | Microcontroller with WiFi |
-| Motor Driver (L298N) | Controls DC motors |
-| DC Motors | Movement of car |
-| Servo Motors | Arm movement |
-| Robotic Chassis | Base structure |
-| Power Supply | Battery |
+| L298N Motor Driver (x2) | Controls DC motors |
+| DC Motors (x4) | 2 for car movement, 2 for robotic arm |
+| Robotic Arm Mechanism | Object handling |
+| Chassis | Base structure |
+| Battery | Power supply |
 
 ---
 

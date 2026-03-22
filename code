@@ -1,1 +1,238 @@
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
 
+const char* ssid = "Your SSID";
+const char* password = "Your Password";
+
+ESP8266WebServer server(80);
+
+/* ===== CAR MOTOR PINS (L293) ===== */
+#define L_IN1 5
+#define L_IN2 4
+#define R_IN1 14
+#define R_IN2 12
+
+/* ===== ARM MOTOR PINS (L298N) ===== */
+// Arm Up / Down
+#define ARM1_IN1 13
+#define ARM1_IN2 15
+
+// Gripper Open / Close
+#define ARM2_IN1 0
+#define ARM2_IN2 2
+
+/* ===== CAR FUNCTIONS ===== */
+void stopCar() {
+  digitalWrite(L_IN1, LOW);
+  digitalWrite(L_IN2, LOW);
+  digitalWrite(R_IN1, LOW);
+  digitalWrite(R_IN2, LOW);
+}
+
+void forward() {
+  digitalWrite(L_IN1, HIGH);
+  digitalWrite(L_IN2, LOW);
+  digitalWrite(R_IN1, HIGH);
+  digitalWrite(R_IN2, LOW);
+}
+
+void backward() {
+  digitalWrite(L_IN1, LOW);
+  digitalWrite(L_IN2, HIGH);
+  digitalWrite(R_IN1, LOW);
+  digitalWrite(R_IN2, HIGH);
+}
+
+void left() {
+  digitalWrite(L_IN1, LOW);
+  digitalWrite(L_IN2, HIGH);
+  digitalWrite(R_IN1, HIGH);
+  digitalWrite(R_IN2, LOW);
+}
+
+void right() {
+  digitalWrite(L_IN1, HIGH);
+  digitalWrite(L_IN2, LOW);
+  digitalWrite(R_IN1, LOW);
+  digitalWrite(R_IN2, HIGH);
+}
+
+/* ===== ARM FUNCTIONS ===== */
+void armUp() {
+  digitalWrite(ARM1_IN1, HIGH);
+  digitalWrite(ARM1_IN2, LOW);
+}
+
+void armDown() {
+  digitalWrite(ARM1_IN1, LOW);
+  digitalWrite(ARM1_IN2, HIGH);
+}
+
+void armStop1() {
+  digitalWrite(ARM1_IN1, LOW);
+  digitalWrite(ARM1_IN2, LOW);
+}
+
+void gripperOpen() {
+  digitalWrite(ARM2_IN1, HIGH);
+  digitalWrite(ARM2_IN2, LOW);
+}
+
+void gripperClose() {
+  digitalWrite(ARM2_IN1, LOW);
+  digitalWrite(ARM2_IN2, HIGH);
+}
+
+void armStop2() {
+  digitalWrite(ARM2_IN1, LOW);
+  digitalWrite(ARM2_IN2, LOW);
+}
+
+/* ===== WEB PAGE ===== */
+void handleRoot() {
+  String html = R"rawliteral(
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <title>RC Car + Arm</title>
+    <style>
+      button {
+        width:130px;
+        height:55px;
+        font-size:18px;
+        margin:6px;
+      }
+    </style>
+
+    <script>
+      function send(cmd) {
+        fetch('/' + cmd);
+      }
+    </script>
+  </head>
+
+  <body align="center">
+    <h2>🚗 Car Control</h2>
+
+    <button 
+      onmousedown="send('F')" 
+      onmouseup="send('S')"
+      ontouchstart="send('F')" 
+      ontouchend="send('S')">
+      Forward
+    </button><br>
+
+    <button 
+      onmousedown="send('L')" 
+      onmouseup="send('S')"
+      ontouchstart="send('L')" 
+      ontouchend="send('S')">
+      Left
+    </button>
+
+    <button 
+      onmousedown="send('R')" 
+      onmouseup="send('S')"
+      ontouchstart="send('R')" 
+      ontouchend="send('S')">
+      Right
+    </button><br>
+
+    <button 
+      onmousedown="send('B')" 
+      onmouseup="send('S')"
+      ontouchstart="send('B')" 
+      ontouchend="send('S')">
+      Backward
+    </button>
+
+    <h2>🤖 Arm Control</h2>
+
+    <button 
+      onmousedown="send('AU')" 
+      onmouseup="send('AS1')"
+      ontouchstart="send('AU')" 
+      ontouchend="send('AS1')">
+      Arm Up
+    </button>
+
+    <button 
+      onmousedown="send('AD')" 
+      onmouseup="send('AS1')"
+      ontouchstart="send('AD')" 
+      ontouchend="send('AS1')">
+      Arm Down
+    </button><br>
+
+    <button 
+      onmousedown="send('GO')" 
+      onmouseup="send('AS2')"
+      ontouchstart="send('GO')" 
+      ontouchend="send('AS2')">
+      Grip Open
+    </button>
+
+    <button 
+      onmousedown="send('GC')" 
+      onmouseup="send('AS2')"
+      ontouchstart="send('GC')" 
+      ontouchend="send('AS2')">
+      Grip Close
+    </button>
+  </body>
+  </html>
+  )rawliteral";
+
+  server.send(200, "text/html", html);
+}
+
+
+/* ===== SETUP ===== */
+void setup() {
+  Serial.begin(9600);
+
+  pinMode(L_IN1, OUTPUT);
+  pinMode(L_IN2, OUTPUT);
+  pinMode(R_IN1, OUTPUT);
+  pinMode(R_IN2, OUTPUT);
+
+  pinMode(ARM1_IN1, OUTPUT);
+  pinMode(ARM1_IN2, OUTPUT);
+  pinMode(ARM2_IN1, OUTPUT);
+  pinMode(ARM2_IN2, OUTPUT);
+
+  stopCar();
+  armStop1();
+  armStop2();
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+
+  Serial.println("✅ WiFi Connected");
+  Serial.println(WiFi.localIP());
+
+  server.on("/", handleRoot);
+
+  server.on("/F", [](){ forward(); server.send(200, "text/plain", "F"); });
+  server.on("/B", [](){ backward(); server.send(200, "text/plain", "B"); });
+  server.on("/L", [](){ left(); server.send(200, "text/plain", "L"); });
+  server.on("/R", [](){ right(); server.send(200, "text/plain", "R"); });
+  server.on("/S", [](){ stopCar(); server.send(200, "text/plain", "S"); });
+
+  server.on("/AU", [](){ armUp(); server.send(200, "text/plain", "AU"); });
+  server.on("/AD", [](){ armDown(); server.send(200, "text/plain", "AD"); });
+  server.on("/AS1", [](){ armStop1(); server.send(200, "text/plain", "AS1"); });
+
+  server.on("/GO", [](){ gripperOpen(); server.send(200, "text/plain", "GO"); });
+  server.on("/GC", [](){ gripperClose(); server.send(200, "text/plain", "GC"); });
+  server.on("/AS2", [](){ armStop2(); server.send(200, "text/plain", "AS2"); });
+
+  server.begin();
+}
+
+/* ===== LOOP ===== */
+void loop() {
+  server.handleClient();
+}

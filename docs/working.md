@@ -1,8 +1,6 @@
-# Working of WiFi Robotic Arm Car
-
-1. ESP32 connects to WiFi network.
-2. User sends control commands from mobile/web app.
-3. ESP32 processes commands.
-4. L298N driver controls car motors.
-5. Servo motors move robotic arm.
-6. Robot performs required operation.
+## Working Principle
+1. User sends commands via WiFi (mobile/web app).
+2. ESP32 receives commands.
+3. First L298N driver controls 2 DC motors for car movement.
+4. Second L298N driver controls 2 DC motors for robotic arm movement.
+5. Robot performs navigation and object manipulation simultaneously.
